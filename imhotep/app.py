@@ -194,7 +194,7 @@ class Imhotep:
                     pos_map[0] = min(pos_map.values())
 
                 violations: Dict[str, List[str]] = results[entry.result_filename]
-                violating_lines: Set[int] = set(int(l) for l in violations.keys())
+                violating_lines: Set[int] = {int(l) for l in violations.keys()}
 
                 matching_numbers = violating_lines.intersection(pos_map)
                 for i in matching_numbers:

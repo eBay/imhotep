@@ -8,9 +8,7 @@ from imhotep.testing_utils import Requester
 def test_commit_url():
     requester = Requester("")
     cr = CommitReporter(requester, "github.com", "foo/bar")
-    cr.report_line(
-        commit="sha", file_name="setup.py", position=0, message="test"
-    )
+    cr.report_line(commit="sha", file_name="setup.py", position=0, message="test")
 
     assert requester.url == "https://api.github.com/repos/foo/bar/commits/sha/comments"
 
@@ -18,9 +16,7 @@ def test_commit_url():
 def test_pr_url():
     requester = Requester("")
     pr = PRReporter(requester, "github.com", "justinabrahms/imhotep", 10)
-    pr.report_line(
-        commit="sha", file_name="setup.py", position=0, message="test"
-    )
+    pr.report_line(commit="sha", file_name="setup.py", position=0, message="test")
 
     assert (
         requester.url
