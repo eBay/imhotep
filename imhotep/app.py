@@ -189,7 +189,7 @@ class Imhotep:
                 pos_map: Dict[int, int] = {
                     x.number: x.position for x in entry.added_lines
                 }
-                added_lines: List[int] = [l.number for l in entry.added_lines]
+                added_lines: List[int] = list(pos_map.keys())
                 if self.report_file_violations:
                     # "magic" value of line 0 represents file-level results.
                     pos_map[0] = min(pos_map.values())
