@@ -209,7 +209,6 @@ class Imhotep:
                     reporter.report_line(
                         cinfo.origin,
                         entry.result_filename,
-                        x,
                         pos_map[i],
                         violations[f"{i}"],
                     )

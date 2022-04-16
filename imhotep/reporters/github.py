@@ -59,7 +59,7 @@ class GitHubReporter(Reporter):
 
 
 class CommitReporter(GitHubReporter):
-    def report_line(self, commit, file_name, line_number, position, message):
+    def report_line(self, commit, file_name, position, message):
         report_url = "https://api.{}/repos/{}/commits/{}/comments".format(
             self.domain,
             self.repo_name,
@@ -90,7 +90,6 @@ class PRReporter(GitHubReporter):
         self,
         commit: str,
         file_name: str,
-        line_number: int,
         position: int,
         message: List[str],
     ) -> Optional[Response]:
