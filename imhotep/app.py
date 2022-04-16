@@ -196,9 +196,9 @@ class Imhotep:
                 violations: Dict[str, List[str]] = results.get(
                     entry.result_filename, {}
                 )
-                violating_lines: List[int] = [int(l) for l in violations.keys()]
+                violating_lines: Set[int] = set(int(l) for l in violations.keys())
 
-                matching_numbers = set(pos_map).intersection(violating_lines)
+                matching_numbers = violating_lines.intersection(pos_map)
                 for i in matching_numbers:
                     error_count += 1
                     if error_count > max_errors:
