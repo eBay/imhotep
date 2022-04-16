@@ -186,6 +186,7 @@ class Imhotep:
                 if entry.result_filename not in results:
                     # This file does not violate anything. Let's go on.
                     continue
+                # Maps line numbers in diff'd files to lines numbers in the diff messages.
                 pos_map: Dict[int, int] = {
                     x.number: x.position for x in entry.added_lines
                 }
