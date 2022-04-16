@@ -193,9 +193,7 @@ class Imhotep:
                     # "magic" value of line 0 represents file-level results.
                     pos_map[0] = min(pos_map.values())
 
-                violations: Dict[str, List[str]] = results.get(
-                    entry.result_filename, {}
-                )
+                violations: Dict[str, List[str]] = results[entry.result_filename]
                 violating_lines: Set[int] = set(int(l) for l in violations.keys())
 
                 matching_numbers = violating_lines.intersection(pos_map)
