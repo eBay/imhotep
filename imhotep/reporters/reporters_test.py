@@ -9,7 +9,7 @@ def test_commit_url():
     requester = Requester("")
     cr = CommitReporter(requester, "github.com", "foo/bar")
     cr.report_line(
-        commit="sha", file_name="setup.py", line_number=10, position=0, message="test"
+        commit="sha", file_name="setup.py", position=0, message="test"
     )
 
     assert requester.url == "https://api.github.com/repos/foo/bar/commits/sha/comments"
@@ -19,7 +19,7 @@ def test_pr_url():
     requester = Requester("")
     pr = PRReporter(requester, "github.com", "justinabrahms/imhotep", 10)
     pr.report_line(
-        commit="sha", file_name="setup.py", line_number=10, position=0, message="test"
+        commit="sha", file_name="setup.py", position=0, message="test"
     )
 
     assert (
@@ -45,7 +45,6 @@ def test_pr_already_reported():
     result = pr.report_line(
         commit="sha",
         file_name="foo.py",
-        line_number=2,
         position=2,
         message="Get that out",
     )
