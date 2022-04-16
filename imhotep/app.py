@@ -186,12 +186,12 @@ class Imhotep:
                 if entry.result_filename not in results:
                     # This file does not violate anything. Let's go on.
                     continue
-                added_lines: List[int] = [l.number for l in entry.added_lines]
                 pos_map: Dict[int, int] = {
                     x.number: x.position for x in entry.added_lines
                 }
                 pos_map[0] = min(pos_map.values())
 
+                added_lines: List[int] = [l.number for l in entry.added_lines]
                 if self.report_file_violations:
                     # "magic" value of line 0 represents file-level results.
                     added_lines.append(0)
