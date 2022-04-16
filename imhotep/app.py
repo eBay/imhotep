@@ -180,9 +180,13 @@ class Imhotep:
 
             error_count = 0
             for entry in parse_results:
-                added_lines: List[int] = [l.number for l in entry.added_lines]
                 if not entry.added_lines:
+                    # We only comment on differences where lines are added.
                     continue
+                if entry.result_filename not in results:
+                    # This file does not violate anything. Let's go on.
+                    continue
+                added_lines: List[int] = [l.number for l in entry.added_lines]
                 pos_map: Dict[int, int] = {
                     0: min(l.position for l in entry.added_lines)
                 }
