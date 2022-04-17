@@ -41,6 +41,18 @@ def test_pr_review_reporter_should_add_comments():
     ]
 
 
+def test_pr_review_reporter_should_post_review():
+    requester = mock.MagicMock()
+    requester.username = "magicmock"
+    requester.post.return_value.status_code = 200
+    pr = PRReviewReporter(requester, "api.github.com", "justinabrahms/imhotep", 10)
+    pr.comments = [
+        {"body": "* lorem\n", "path": "script.py", "position": 0},
+    ]
+    pr.submit_review()
+    assert requester.post.called
+
+
 def test_pr_already_reported():
     requester = mock.MagicMock()
     requester.username = "magicmock"
