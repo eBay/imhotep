@@ -105,7 +105,10 @@ class CommitReporter(GitHubReporter):
             return None
         log.debug("Commit Request: %s", report_url)
         log.debug("Commit Payload: %s", payload)
-        self.requester.post(report_url, payload)
+        result = self.requester.post(report_url, payload)
+        if result.status_code >= 400:
+            log.error("Error posting line to github. %s", result.json())
+        return result
 
 
 class PRReporter(GitHubReporter):
