@@ -86,7 +86,7 @@ class Imhotep:
         github_domain: Optional[str] = None,
         report_file_violations: bool = False,
         dir_override: Optional[str] = None,
-        should_submit_comments_separately: bool = false,
+        should_submit_comments_separately: bool = False,
         **kwargs,
     ) -> None:
         # TODO(justinabrahms): kwargs exist until we handle cli params better
