@@ -83,8 +83,8 @@ access token and use that for the `--github-password` above.
 
 ### Full Usage Info
 ```
-usage: imhotep [-h] [--config-file CONFIG_FILE] --repo_name REPO_NAME [--commit COMMIT] [--origin-commit ORIGIN_COMMIT] [--filenames FILENAMES [FILENAMES ...]] [--debug] [--github-username GITHUB_USERNAME] [--github-password GITHUB_PASSWORD] [--no-post] [--authenticated] [--pr-number PR_NUMBER] [--cache-directory CACHE_DIRECTORY] [--linter LINTER [LINTER ...]] [--shallow]
-               [--github-domain GITHUB_DOMAIN] [--report-file-violations] [--dir-override DIR_OVERRIDE]
+usage: imhotep [-h] [--config-file CONFIG_FILE] --repo_name REPO_NAME [--commit COMMIT] [--origin-commit ORIGIN_COMMIT] [--filenames FILENAMES [FILENAMES ...]] [--debug] [--github-username GITHUB_USERNAME] [--github-password GITHUB_PASSWORD] [--no-post] [--authenticated] [--pr-number PR_NUMBER] [--cache-directory CACHE_DIRECTORY] [--linter LINTER [LINTER ...]] [--shallow] [--github-domain GITHUB_DOMAIN] [--report-file-violations] [--dir-override DIR_OVERRIDE]
+               [--submit-comments-separately]
 
 Posts static analysis results to github.
 
@@ -119,6 +119,8 @@ options:
                         Report file-level violations, i.e. those not on individual lines
   --dir-override DIR_OVERRIDE
                         Override the full path to the local repository.
+  --submit-comments-separately
+                        When reviewing a PR, rather than posting a single PR review, post separate comments
 ```
 
 Note: if you get a error where the plugin cannot find `imhotep.tools`, make
@@ -184,6 +186,9 @@ not spacing and misspelling issues.
 # Release Notes
 
 ### 3.0.0
+Features:
+- When reviewing a PR, post comments as a single review by default. If you want the original behavior, specify `--submit-comments-separately`.
+
 Backwards incompatible change:
 - Dropped support for Python < 3.9 and pypy.
 
