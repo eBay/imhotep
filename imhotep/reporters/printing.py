@@ -6,7 +6,7 @@ log = logging.getLogger(__name__)
 
 
 class PrintingReporter(Reporter):
-    def report_line(self, commit, file_name, line_number, position, message):
+    def report_line(self, commit, file_name, position, message):
         print(
             "Would have posted the following: \n"
             "commit: %(commit)s\n"

@@ -124,7 +124,6 @@ def test_printing_reporter_report_line():
     PrintingReporter().report_line(
         commit="commit",
         file_name="file.py",
-        line_number=123,
         position=1,
         message="message",
     )
