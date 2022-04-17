@@ -98,7 +98,9 @@ class PRReporter(GitHubReporter):
         position: int,
         message: List[str],
     ) -> Optional[Response]:
-        payload = self.get_payload(commit, file_name, position, message)
+        payload = self.get_payload(
+            self.pr_comments_url, commit, "commit_id", file_name, position, message
+        )
         if payload is None:
             return None
         log.debug("PR Request: %s", self.pr_comments_url)
@@ -123,13 +125,19 @@ class PRReporter(GitHubReporter):
         return result
 
     def get_payload(
-        self, commit: str, file_name: str, position: int, message: List[str]
+        self,
+        comments_url: str,
+        commit: Optional[str],
+        commit_key: Optional[str],
+        file_name: str,
+        position: int,
+        message: List[str],
     ) -> Optional[Dict[str, Union[str, int]]]:
         """
         Wraps a message (which is a string) into GitHub-understandable comment (which is a JSON object).
         It checks if there's already an identical comment on the PR. If there is, `None` is returned.
         """
-        existing_comments = self.get_comments(self.pr_comments_url)
+        existing_comments = self.get_comments(comments_url)
         if isinstance(message, str):
             message = [message]
         message = self.clean_already_reported(
@@ -138,9 +146,11 @@ class PRReporter(GitHubReporter):
         if not message:
             log.debug("Message already reported")
             return None
-        return {
+        payload = {
             "body": self.convert_message_to_string(message),
-            "commit_id": commit,  # sha
             "path": file_name,  # relative file path
             "position": position,  # line index into the diff
         }
+        if commit_key is not None and commit is not None:
+            payload[commit_key] = commit
+        return payload
