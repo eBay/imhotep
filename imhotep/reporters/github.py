@@ -79,12 +79,18 @@ class CommitReporter(GitHubReporter):
         self.requester.post(report_url, payload)
 
 
+
 class PRReporter(GitHubReporter):
     def __init__(
         self, requester: BasicAuthRequester, domain: str, repo_name: str, pr_number: str
     ) -> None:
-        self.pr_number = pr_number
         super().__init__(requester, domain, repo_name)
+        self.pr_number = pr_number
+        self.pr_comments_url = "https://api.{}/repos/{}/pulls/{}/comments".format(
+            self.domain,
+            self.repo_name,
+            self.pr_number,
+        )
 
     def report_line(
         self,
@@ -93,27 +99,16 @@ class PRReporter(GitHubReporter):
         position: int,
         message: List[str],
     ) -> Optional[Response]:
-        report_url = "https://api.{}/repos/{}/pulls/{}/comments".format(
-            self.domain,
-            self.repo_name,
-            self.pr_number,
-        )
-        comments = self.get_comments(report_url)
-        if isinstance(message, str):
-            message = [message]
-        message = self.clean_already_reported(comments, file_name, position, message)
-        if not message:
-            log.debug("Message already reported")
+        payload = self.get_payload(
+            commit,
+            file_name,
+            position,
+            message)
+        if payload is None:
             return None
-        payload = {
-            "body": self.convert_message_to_string(message),
-            "commit_id": commit,  # sha
-            "path": file_name,  # relative file path
-            "position": position,  # line index into the diff
-        }
-        log.debug("PR Request: %s", report_url)
+        log.debug("PR Request: %s", self.pr_comments_url)
         log.debug("PR Payload: %s", payload)
-        result = self.requester.post(report_url, payload)
+        result = self.requester.post(self.pr_comments_url, payload)
         if result.status_code >= 400:
             log.error("Error posting line to github. %s", result.json())
         return result
@@ -131,3 +126,26 @@ class PRReporter(GitHubReporter):
         if result.status_code >= 400:
             log.error("Error posting comment to github. %s", result.json())
         return result
+
+    def get_payload(self,
+        commit: str,
+        file_name: str,
+        position: int,
+        message: List[str]) -> Optional[Dict[str, Union[str, int]]]:
+        """
+        Wraps a message (which is a string) into GitHub-understandable comment (which is a JSON object).
+        It checks if there's already an identical comment on the PR. If there is, `None` is returned.
+        """
+        existing_comments = self.get_comments(self.pr_comments_url)
+        if isinstance(message, str):
+            message = [message]
+        message = self.clean_already_reported(existing_comments, file_name, position, message)
+        if not message:
+            log.debug("Message already reported")
+            return None
+        return {
+            "body": self.convert_message_to_string(message),
+            "commit_id": commit,  # sha
+            "path": file_name,  # relative file path
+            "position": position,  # line index into the diff
+        }
