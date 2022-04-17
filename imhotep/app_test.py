@@ -3,7 +3,7 @@ from collections import namedtuple
 from unittest import mock
 
 from imhotep.main import load_config
-from imhotep.testing_utils import Requester, fixture_path
+from imhotep.testing_utils import fixture_path
 
 from .app import (
     Imhotep,
@@ -18,7 +18,7 @@ from .app import (
 )
 from .diff_parser import Entry
 from .repomanagers import RepoManager
-from .reporters.github import CommitReporter, PRReporter
+from .reporters.github import CommitReporter, PRReporter, PRReviewReporter
 from .reporters.printing import PrintingReporter
 from .repositories import Repository, ToolsNotFound
 from .tools import Tool
@@ -109,15 +109,28 @@ def test_reporter__printing():
     assert type(i.get_reporter()) == PrintingReporter
 
 
-def test_reporter__pr():
+def test_reporter__pr_via_comments():
     i = Imhotep(
         pr_number=1,
         repo_manager=RepoManager(),
         repo_name="repo_name",
         requester=mock.Mock(),
         github_domain="github.com",
+        should_submit_comments_separately=True,
     )
     assert type(i.get_reporter()) == PRReporter
+
+
+def test_reporter__pr_via_a_review():
+    i = Imhotep(
+        pr_number=1,
+        repo_manager=RepoManager(),
+        repo_name="repo_name",
+        requester=mock.Mock(),
+        github_domain="github.com",
+        should_submit_comments_separately=False,
+    )
+    assert type(i.get_reporter()) == PRReviewReporter
 
 
 def test_reporter__commit():
