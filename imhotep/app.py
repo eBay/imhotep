@@ -3,7 +3,7 @@ import glob
 import logging
 import subprocess
 from collections import defaultdict
-from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Type
+from typing import Any, DefaultDict, Dict, List, Optional, Set, Type
 
 import pkg_resources
 
@@ -16,7 +16,7 @@ from imhotep.shas import CommitInfo
 
 from .diff_parser import DiffContextParser
 from .errors import NoCommitInfo, UnknownTools
-from .reporters.github import CommitReporter, PRReporter, Reporter
+from .reporters.github import CommitReporter, PRReporter, PRReviewReporter, Reporter
 from .reporters.printing import PrintingReporter
 from .shas import CommitInfo, get_pr_info
 
@@ -86,6 +86,7 @@ class Imhotep:
         github_domain: Optional[str] = None,
         report_file_violations: bool = False,
         dir_override: Optional[str] = None,
+        should_submit_comments_separately: bool = false,
         **kwargs,
     ) -> None:
         # TODO(justinabrahms): kwargs exist until we handle cli params better
@@ -107,6 +108,7 @@ class Imhotep:
         self.github_domain = github_domain
         self.report_file_violations = report_file_violations
         self.dir_override = dir_override
+        self.should_submit_comments_separately = should_submit_comments_separately
 
         if self.commit is None and self.pr_number is None:
             raise NoCommitInfo()
@@ -130,7 +132,12 @@ class Imhotep:
                     "PR number specified, but repo_name is missing. Default to printing reporter."
                 )
                 return PrintingReporter()
-            return PRReporter(
+            if self.should_submit_comments_separately:
+                return PRReporter(
+                    self.requester, self.github_domain, self.repo_name, self.pr_number
+                )
+
+            return PRReviewReporter(
                 self.requester, self.github_domain, self.repo_name, self.pr_number
             )
         elif self.commit is not None:
@@ -214,6 +221,9 @@ class Imhotep:
                         " continue.".format(error_count=error_count)
                     )
                 log.info("%d violations.", error_count)
+                if hasattr(reporter, "submit_review"):
+                    log.debug("Submitting review.")
+                    reporter.submit_review()
         finally:
             self.manager.cleanup()
 
@@ -362,6 +372,11 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     arg_parser.add_argument(
         "--dir-override",
         help="Override the full path to the local repository.",
+    )
+    arg_parser.add_argument(
+        "--submit-comments-separately",
+        action="store_true",
+        help="When reviewing a PR, rather than posting a single PR review, post separate comments",
     )
     # parse out repo name
     return arg_parser.parse_args(args)
