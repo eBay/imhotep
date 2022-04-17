@@ -221,9 +221,9 @@ class Imhotep:
                         " continue.".format(error_count=error_count)
                     )
                 log.info("%d violations.", error_count)
-                if hasattr(reporter, "submit_review"):
-                    log.debug("Submitting review.")
-                    reporter.submit_review()  # type: ignore
+            if hasattr(reporter, "submit_review"):
+                log.debug("Submitting review.")
+                reporter.submit_review()  # type: ignore
         finally:
             self.manager.cleanup()
 
