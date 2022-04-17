@@ -3,7 +3,7 @@ Thanks to @fridgei & @scottjab for the initial version of this code.
 """
 import re
 from collections import namedtuple
-from typing import List, Union
+from typing import List, Optional, Union
 
 Line = namedtuple("Line", ["number", "position", "contents"])
 
@@ -11,6 +11,7 @@ diff_re = re.compile(
     r"@@ \-(?P<removed_start>\d+),(?P<removed_length>\d+) "
     r"\+(?P<added_start>\d+),(?P<added_length>\d+) @@"
 )
+files_re = re.compile(r"diff .*a/(?P<origin_filename>.*) b/(?P<result_filename>.*)")
 
 
 class Entry:
@@ -74,19 +75,20 @@ class DiffContextParser:
         """
         result = []
 
-        z = None
+        # Container for the file that was diff'd.
+        z: Optional[Entry] = None
 
-        before_line_number, after_line_number = 0, 0
-        position = 0
+        before_line_number: int = 0
+        after_line_number: int = 0
+        # `position` is the line ID of this line of diff within the block of 2 files.
+        position: int = 0
 
         for line in self.diff_text.splitlines():
             if type(line) is bytes:
                 line = line.decode("utf-8")
             assert type(line) is str
             # New File
-            match = re.search(
-                r"diff .*a/(?P<origin_filename>.*) " r"b/(?P<result_filename>.*)", line
-            )
+            match = files_re.search(line)
             if match is not None:
                 if z is not None:
                     result.append(z)
@@ -103,10 +105,7 @@ class DiffContextParser:
             if header is not None:
                 before_line_number = int(header.group("removed_start"))
                 after_line_number = int(header.group("added_start"))
-                position += 1
-                continue
-
-            if z is not None:
+            elif z is not None:
                 # removed line
                 if line.startswith("-"):
                     z.new_removed(Line(before_line_number, position, line[1:]))
@@ -126,7 +125,6 @@ class DiffContextParser:
 
                     before_line_number += 1
                     after_line_number += 1
-
             position += 1
 
         if z is not None:

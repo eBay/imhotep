@@ -180,25 +180,24 @@ class Imhotep:
 
             error_count = 0
             for entry in parse_results:
-                added_lines: List[int] = [l.number for l in entry.added_lines]
                 if not entry.added_lines:
+                    # We only comment on differences where lines are added.
                     continue
+                if entry.result_filename not in results:
+                    # This file does not violate anything. Let's go on.
+                    continue
+                # Maps line numbers in diff'd files to lines numbers in the diff messages.
                 pos_map: Dict[int, int] = {
-                    0: min(l.position for l in entry.added_lines)
+                    x.number: x.position for x in entry.added_lines
                 }
-                for x in entry.added_lines:
-                    pos_map[x.number] = x.position
-
                 if self.report_file_violations:
                     # "magic" value of line 0 represents file-level results.
-                    added_lines.append(0)
+                    pos_map[0] = min(pos_map.values())
 
-                violations: Dict[str, List[str]] = results.get(
-                    entry.result_filename, {}
-                )
-                violating_lines: List[int] = [int(l) for l in violations.keys()]
+                violations: Dict[str, List[str]] = results[entry.result_filename]
+                violating_lines: Set[int] = {int(l) for l in violations.keys()}
 
-                matching_numbers = set(added_lines).intersection(violating_lines)
+                matching_numbers = violating_lines.intersection(pos_map)
                 for i in matching_numbers:
                     error_count += 1
                     if error_count > max_errors:
@@ -206,7 +205,6 @@ class Imhotep:
                     reporter.report_line(
                         cinfo.origin,
                         entry.result_filename,
-                        x,
                         pos_map[i],
                         violations[f"{i}"],
                     )
