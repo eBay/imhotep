@@ -57,6 +57,37 @@ class GitHubReporter(Reporter):
             final_message += f"* {submessage}\n"
         return final_message
 
+    def get_payload(
+        self,
+        comments_url: str,
+        commit: Optional[str],
+        commit_key: Optional[str],
+        file_name: str,
+        position: int,
+        message: List[str],
+    ) -> Optional[Dict[str, Union[str, int]]]:
+        """
+        Wraps a message (which is a string) into GitHub-understandable comment (which is a JSON object).
+        It checks if there's already an identical comment on the PR. If there is, `None` is returned.
+        """
+        existing_comments = self.get_comments(comments_url)
+        if isinstance(message, str):
+            message = [message]
+        message = self.clean_already_reported(
+            existing_comments, file_name, position, message
+        )
+        if not message:
+            log.debug("Message already reported")
+            return None
+        payload = {
+            "body": self.convert_message_to_string(message),
+            "path": file_name,  # relative file path
+            "position": position,  # line index into the diff
+        }
+        if commit_key is not None and commit is not None:
+            payload[commit_key] = commit
+        return payload
+
 
 class CommitReporter(GitHubReporter):
     def report_line(self, commit, file_name, position, message):
@@ -123,34 +154,3 @@ class PRReporter(GitHubReporter):
         if result.status_code >= 400:
             log.error("Error posting comment to github. %s", result.json())
         return result
-
-    def get_payload(
-        self,
-        comments_url: str,
-        commit: Optional[str],
-        commit_key: Optional[str],
-        file_name: str,
-        position: int,
-        message: List[str],
-    ) -> Optional[Dict[str, Union[str, int]]]:
-        """
-        Wraps a message (which is a string) into GitHub-understandable comment (which is a JSON object).
-        It checks if there's already an identical comment on the PR. If there is, `None` is returned.
-        """
-        existing_comments = self.get_comments(comments_url)
-        if isinstance(message, str):
-            message = [message]
-        message = self.clean_already_reported(
-            existing_comments, file_name, position, message
-        )
-        if not message:
-            log.debug("Message already reported")
-            return None
-        payload = {
-            "body": self.convert_message_to_string(message),
-            "path": file_name,  # relative file path
-            "position": position,  # line index into the diff
-        }
-        if commit_key is not None and commit is not None:
-            payload[commit_key] = commit
-        return payload
