@@ -79,7 +79,6 @@ class CommitReporter(GitHubReporter):
         self.requester.post(report_url, payload)
 
 
-
 class PRReporter(GitHubReporter):
     def __init__(
         self, requester: BasicAuthRequester, domain: str, repo_name: str, pr_number: str
@@ -99,11 +98,7 @@ class PRReporter(GitHubReporter):
         position: int,
         message: List[str],
     ) -> Optional[Response]:
-        payload = self.get_payload(
-            commit,
-            file_name,
-            position,
-            message)
+        payload = self.get_payload(commit, file_name, position, message)
         if payload is None:
             return None
         log.debug("PR Request: %s", self.pr_comments_url)
@@ -127,11 +122,9 @@ class PRReporter(GitHubReporter):
             log.error("Error posting comment to github. %s", result.json())
         return result
 
-    def get_payload(self,
-        commit: str,
-        file_name: str,
-        position: int,
-        message: List[str]) -> Optional[Dict[str, Union[str, int]]]:
+    def get_payload(
+        self, commit: str, file_name: str, position: int, message: List[str]
+    ) -> Optional[Dict[str, Union[str, int]]]:
         """
         Wraps a message (which is a string) into GitHub-understandable comment (which is a JSON object).
         It checks if there's already an identical comment on the PR. If there is, `None` is returned.
@@ -139,7 +132,9 @@ class PRReporter(GitHubReporter):
         existing_comments = self.get_comments(self.pr_comments_url)
         if isinstance(message, str):
             message = [message]
-        message = self.clean_already_reported(existing_comments, file_name, position, message)
+        message = self.clean_already_reported(
+            existing_comments, file_name, position, message
+        )
         if not message:
             log.debug("Message already reported")
             return None
