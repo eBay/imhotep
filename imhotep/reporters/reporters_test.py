@@ -1,6 +1,11 @@
 from unittest import mock
 
-from imhotep.reporters.github import CommitReporter, GitHubReporter, PRReporter
+from imhotep.reporters.github import (
+    CommitReporter,
+    GitHubReporter,
+    PRReporter,
+    PRReviewReporter,
+)
 from imhotep.reporters.printing import PrintingReporter
 from imhotep.testing_utils import Requester
 
@@ -22,6 +27,18 @@ def test_pr_url():
         requester.url
         == "https://api.github.com/repos/justinabrahms/imhotep/pulls/10/comments"
     )
+
+
+def test_pr_review_reporter_should_add_comments():
+    requester = Requester("")
+    pr = PRReviewReporter(requester, "github.com", "justinabrahms/imhotep", 10)
+    pr.report_line(commit="sha", file_name="script.py", position=0, message="lorem")
+    assert pr.comments == [{"body": "* lorem\n", "path": "script.py", "position": 0}]
+    pr.report_line(commit="sha", file_name="script.py", position=1, message="ipsum")
+    assert pr.comments == [
+        {"body": "* lorem\n", "path": "script.py", "position": 0},
+        {"body": "* ipsum\n", "path": "script.py", "position": 1},
+    ]
 
 
 def test_pr_already_reported():
