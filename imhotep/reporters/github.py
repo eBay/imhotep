@@ -67,12 +67,12 @@ class CommitReporter(GitHubReporter):
         )
         comments = self.get_comments(report_url)
         message = self.clean_already_reported(comments, file_name, position, message)
+        # See https://docs.github.com/en/rest/reference/commits#create-a-commit-comment--parameters.
         payload = {
             "body": self.convert_message_to_string(message),
-            "sha": commit,
+            "commit_sha": commit,
             "path": file_name,
             "position": position,
-            "line": None,
         }
         log.debug("Commit Request: %s", report_url)
         log.debug("Commit Payload: %s", payload)
