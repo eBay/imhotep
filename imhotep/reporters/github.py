@@ -112,6 +112,10 @@ class CommitReporter(GitHubReporter):
 
 
 class PRReporter(GitHubReporter):
+    """
+    Comments on a PR by posting separate comments, rather than a review on the PR.
+    See https://docs.github.com/en/rest/reference/pulls#create-a-review-comment-for-a-pull-request.
+    """
     def __init__(
         self, requester: BasicAuthRequester, domain: str, repo_name: str, pr_number: str
     ) -> None:
@@ -154,4 +158,56 @@ class PRReporter(GitHubReporter):
         result = self.requester.post(report_url, {"body": message})
         if result.status_code >= 400:
             log.error("Error posting comment to github. %s", result.json())
+        return result
+
+
+class PRReviewReporter(PRReporter):
+    """
+    Comments on a PR by posting a review on the PR, rather than separate comments.
+    See https://docs.github.com/en/rest/reference/pulls#create-a-review-for-a-pull-request--parameters.
+    """
+
+    def __init__(
+        self, requester: BasicAuthRequester, domain: str, repo_name: str, pr_number: str
+    ) -> None:
+        super().__init__(requester, domain, repo_name, pr_number)
+        self.comments: List[Dict[str, Union[str, int]]] = list()
+
+    def report_line(
+        self,
+        commit: str,
+        file_name: str,
+        position: int,
+        message: List[str],
+    ) -> Optional[Response]:
+        payload = self.get_payload(
+            self.pr_comments_url, None, None, file_name, position, message
+        )
+        if payload is None:
+            return None
+        self.comments.append(payload)
+
+    def submit_review(self) -> Optional[Response]:
+        """
+        Submits review comments (stored in `self.comments`) to GitHub in one go as a single review.
+        """
+        self.pr_reviews_url = "https://api.{}/repos/{}/pulls/{}/reviews".format(
+            self.domain,
+            self.repo_name,
+            self.pr_number,
+        )
+        if len(self.comments) == 0:
+            return
+        payload = {
+            "body": "Imhotep detected {} potential problems with this PR.".format(
+                len(self.comments)
+            ),
+            "event": "COMMENT",
+            "comments": self.comments,
+        }
+        log.debug("PR Request: %s", self.pr_reviews_url)
+        log.debug("PR Payload: %s", payload)
+        result = self.requester.post(self.pr_reviews_url, payload)
+        if result.status_code >= 400:
+            log.error("Error posting review to github. %s", result.json())
         return result
