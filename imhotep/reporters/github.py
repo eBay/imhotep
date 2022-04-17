@@ -65,7 +65,7 @@ class GitHubReporter(Reporter):
         file_name: str,
         position: int,
         message: List[str],
-    ) -> Optional[Dict[str, Union[str, int]]]:
+    ) -> Optional[Dict[str, object]]:
         """
         Wraps a message (which is a string) into GitHub-understandable comment (which is a JSON object).
         It checks if there's already an identical comment on the PR. If there is, `None` is returned.
@@ -116,6 +116,7 @@ class PRReporter(GitHubReporter):
     Comments on a PR by posting separate comments, rather than a review on the PR.
     See https://docs.github.com/en/rest/reference/pulls#create-a-review-comment-for-a-pull-request.
     """
+
     def __init__(
         self, requester: BasicAuthRequester, domain: str, repo_name: str, pr_number: str
     ) -> None:
@@ -171,7 +172,7 @@ class PRReviewReporter(PRReporter):
         self, requester: BasicAuthRequester, domain: str, repo_name: str, pr_number: str
     ) -> None:
         super().__init__(requester, domain, repo_name, pr_number)
-        self.comments: List[Dict[str, Union[str, int]]] = list()
+        self.comments: List[Dict[str, object]] = list()
 
     def report_line(
         self,
@@ -186,6 +187,7 @@ class PRReviewReporter(PRReporter):
         if payload is None:
             return None
         self.comments.append(payload)
+        return None
 
     def submit_review(self) -> Optional[Response]:
         """
@@ -197,7 +199,7 @@ class PRReviewReporter(PRReporter):
             self.pr_number,
         )
         if len(self.comments) == 0:
-            return
+            return None
         payload = {
             "body": "Imhotep detected {} potential problems with this PR.".format(
                 len(self.comments)
