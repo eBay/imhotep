@@ -4,7 +4,7 @@ setup(
     name="imhotep",
     version="3.0.1",
     packages=find_packages(),
-    url="https://github.com/eBay/imhotep",
+    url="https://github.com/justinabrahms/imhotep",
     license="MIT",
     author="Justin Abrahms",
     author_email="justin@abrah.ms",
