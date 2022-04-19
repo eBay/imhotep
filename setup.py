@@ -2,16 +2,16 @@ from setuptools import find_packages, setup
 
 setup(
     name="imhotep",
-    version="3.0.0",
+    version="3.0.1",
     packages=find_packages(),
-    url="https://github.com/justinabrahms/imhotep",
+    url="https://github.com/eBay/imhotep",
     license="MIT",
     author="Justin Abrahms",
     author_email="justin@abrah.ms",
     description="A tool to pipe linters into code review",
     python_requires=">=3.9",
     install_requires=[
-        "requests~=2.20.0",
+        "requests",
         "six",
     ],
     extras_require={"pylint": "PyLint"},
