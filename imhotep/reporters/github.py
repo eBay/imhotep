@@ -57,6 +57,37 @@ class GitHubReporter(Reporter):
             final_message += f"* {submessage}\n"
         return final_message
 
+    def get_payload(
+        self,
+        comments_url: str,
+        commit: Optional[str],
+        commit_key: Optional[str],
+        file_name: str,
+        position: int,
+        message: List[str],
+    ) -> Optional[Dict[str, object]]:
+        """
+        Wraps a message (which is a string) into GitHub-understandable comment (which is a JSON object).
+        It checks if there's already an identical comment on the PR. If there is, `None` is returned.
+        """
+        existing_comments = self.get_comments(comments_url)
+        if isinstance(message, str):
+            message = [message]
+        message = self.clean_already_reported(
+            existing_comments, file_name, position, message
+        )
+        if not message:
+            log.debug("Message already reported")
+            return None
+        payload = {
+            "body": self.convert_message_to_string(message),
+            "path": file_name,  # relative file path
+            "position": position,  # line index into the diff
+        }
+        if commit_key is not None and commit is not None:
+            payload[commit_key] = commit
+        return payload
+
 
 class CommitReporter(GitHubReporter):
     def report_line(self, commit, file_name, position, message):
@@ -67,24 +98,35 @@ class CommitReporter(GitHubReporter):
         )
         comments = self.get_comments(report_url)
         message = self.clean_already_reported(comments, file_name, position, message)
-        payload = {
-            "body": self.convert_message_to_string(message),
-            "sha": commit,
-            "path": file_name,
-            "position": position,
-            "line": None,
-        }
+        payload = self.get_payload(
+            report_url, commit, "commit_sha", file_name, position, message
+        )
+        if payload is None:
+            return None
         log.debug("Commit Request: %s", report_url)
         log.debug("Commit Payload: %s", payload)
-        self.requester.post(report_url, payload)
+        result = self.requester.post(report_url, payload)
+        if result.status_code >= 400:
+            log.error("Error posting line to github. %s", result.json())
+        return result
 
 
 class PRReporter(GitHubReporter):
+    """
+    Comments on a PR by posting separate comments, rather than a review on the PR.
+    See https://docs.github.com/en/rest/reference/pulls#create-a-review-comment-for-a-pull-request.
+    """
+
     def __init__(
         self, requester: BasicAuthRequester, domain: str, repo_name: str, pr_number: str
     ) -> None:
-        self.pr_number = pr_number
         super().__init__(requester, domain, repo_name)
+        self.pr_number = pr_number
+        self.pr_comments_url = "https://api.{}/repos/{}/pulls/{}/comments".format(
+            self.domain,
+            self.repo_name,
+            self.pr_number,
+        )
 
     def report_line(
         self,
@@ -93,27 +135,14 @@ class PRReporter(GitHubReporter):
         position: int,
         message: List[str],
     ) -> Optional[Response]:
-        report_url = "https://api.{}/repos/{}/pulls/{}/comments".format(
-            self.domain,
-            self.repo_name,
-            self.pr_number,
+        payload = self.get_payload(
+            self.pr_comments_url, commit, "commit_id", file_name, position, message
         )
-        comments = self.get_comments(report_url)
-        if isinstance(message, str):
-            message = [message]
-        message = self.clean_already_reported(comments, file_name, position, message)
-        if not message:
-            log.debug("Message already reported")
+        if payload is None:
             return None
-        payload = {
-            "body": self.convert_message_to_string(message),
-            "commit_id": commit,  # sha
-            "path": file_name,  # relative file path
-            "position": position,  # line index into the diff
-        }
-        log.debug("PR Request: %s", report_url)
+        log.debug("PR Request: %s", self.pr_comments_url)
         log.debug("PR Payload: %s", payload)
-        result = self.requester.post(report_url, payload)
+        result = self.requester.post(self.pr_comments_url, payload)
         if result.status_code >= 400:
             log.error("Error posting line to github. %s", result.json())
         return result
@@ -130,4 +159,57 @@ class PRReporter(GitHubReporter):
         result = self.requester.post(report_url, {"body": message})
         if result.status_code >= 400:
             log.error("Error posting comment to github. %s", result.json())
+        return result
+
+
+class PRReviewReporter(PRReporter):
+    """
+    Comments on a PR by posting a review on the PR, rather than separate comments.
+    See https://docs.github.com/en/rest/reference/pulls#create-a-review-for-a-pull-request--parameters.
+    """
+
+    def __init__(
+        self, requester: BasicAuthRequester, domain: str, repo_name: str, pr_number: str
+    ) -> None:
+        super().__init__(requester, domain, repo_name, pr_number)
+        self.comments: List[Dict[str, object]] = list()
+
+    def report_line(
+        self,
+        commit: str,
+        file_name: str,
+        position: int,
+        message: List[str],
+    ) -> Optional[Response]:
+        payload = self.get_payload(
+            self.pr_comments_url, None, None, file_name, position, message
+        )
+        if payload is None:
+            return None
+        self.comments.append(payload)
+        return None
+
+    def submit_review(self) -> Optional[Response]:
+        """
+        Submits review comments (stored in `self.comments`) to GitHub in one go as a single review.
+        """
+        self.pr_reviews_url = "https://api.{}/repos/{}/pulls/{}/reviews".format(
+            self.domain,
+            self.repo_name,
+            self.pr_number,
+        )
+        if len(self.comments) == 0:
+            return None
+        payload = {
+            "body": "Imhotep detected {} potential problems with this PR.".format(
+                len(self.comments)
+            ),
+            "event": "COMMENT",
+            "comments": self.comments,
+        }
+        log.debug("PR Request: %s", self.pr_reviews_url)
+        log.debug("PR Payload: %s", payload)
+        result = self.requester.post(self.pr_reviews_url, payload)
+        if result.status_code >= 400:
+            log.error("Error posting review to github. %s", result.json())
         return result
