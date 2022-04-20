@@ -30,7 +30,7 @@ def test_pr_url():
 
 
 def test_pr_review_reporter_should_add_comments():
-    requester = Requester("")
+    requester = mock.MagicMock()
     pr = PRReviewReporter(requester, "github.com", "justinabrahms/imhotep", 10)
     pr.report_line(commit="sha", file_name="script.py", position=0, message="lorem")
     assert pr.comments == [{"body": "* lorem\n", "path": "script.py", "position": 0}]
@@ -39,6 +39,7 @@ def test_pr_review_reporter_should_add_comments():
         {"body": "* lorem\n", "path": "script.py", "position": 0},
         {"body": "* ipsum\n", "path": "script.py", "position": 1},
     ]
+    assert not requester.post.called
 
 
 def test_pr_review_reporter_should_post_review():
