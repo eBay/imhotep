@@ -27,6 +27,7 @@ class RepoManager:
         shallow_clone: bool = False,
         domain: Optional[str] = None,
         dir_override: Optional[str] = None,
+        base_branch_name: Optional[str] = "main",
     ) -> None:
         self.should_cleanup = cache_directory is None and dir_override is None
         self.authenticated = authenticated
@@ -36,6 +37,7 @@ class RepoManager:
         self.executor = executor
         self.shallow = shallow_clone
         self.domain = domain
+        self.base_branch_name = base_branch_name
 
     def get_repo_class(self) -> Type[Repository]:
         if self.authenticated:
@@ -103,8 +105,13 @@ class RepoManager:
             log.error("Executor does not exist.")
             raise RuntimeError
         if os.path.isdir("%s/.git" % dirname):
-            log.debug("Updating %s to %s", repo.download_location, dirname)
-            self.executor("cd %s && git switch master" % dirname)
+            log.debug(
+                "Updating %s to %s, on branch %s",
+                repo.download_location,
+                dirname,
+                self.base_branch_name,
+            )
+            self.executor(f"cd {dirname} && git switch {self.base_branch_name}")
             self.pull(dirname)
         else:
             log.debug("Cloning %s to %s", repo.download_location, dirname)
@@ -130,7 +137,12 @@ class ShallowRepoManager(RepoManager):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def clone_repo(self, repo_name, remote_repo, ref):
+    def clone_repo(
+        self,
+        repo_name: str,
+        remote_repo,
+        ref: str,
+    ) -> Repository:
         self.shallow_clone = True
         dirname, repo = self.set_up_clone(repo_name, remote_repo)
         remote_name = "origin"

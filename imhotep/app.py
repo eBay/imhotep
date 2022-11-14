@@ -251,6 +251,7 @@ def gen_imhotep(**kwargs) -> Imhotep:
         executor=run,
         domain=domain,
         dir_override=kwargs.get("dir_override"),
+        base_branch_name=kwargs.get("base_branch_name"),
     )
 
     if kwargs["pr_number"]:
@@ -306,6 +307,12 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     )
     arg_parser.add_argument(
         "--commit", help="The sha of the commit to run static analysis on."
+    )
+    arg_parser.add_argument(
+        "--base_branch_name",
+        required=False,
+        default="main",
+        help="Name of the main/master branch to fetch remotes on. Won't be used as a comparison target.",
     )
     arg_parser.add_argument(
         "--origin-commit",
