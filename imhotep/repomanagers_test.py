@@ -122,6 +122,21 @@ def test_adds_remote_if_pr_is_remote():
     assert len(calls_matching_re(m, finder)) == 1, "Remote not added"
 
 
+def test_custom_base_branch_name():
+    finder = re.compile(r"git switch bar")
+    m = mock.Mock()
+    r = RepoManager(
+        cache_directory="/fooz", executor=m, tools=[None], base_branch_name="bar"
+    )
+    with mock.patch("os.path.isdir") as isdir:
+        isdir.return_value = True
+        r.clone_repo(repo_name, Remote("name", "url"), None)
+
+    assert (
+        len(calls_matching_re(m, finder)) == 1
+    ), "custom base branch name was not respected"
+
+
 def test_adds_remote_if_pr_is_remote_and_is_authenticated():
     finder = re.compile(r"git remote add name git@github.com:a/b.git")
     m = mock.Mock()
