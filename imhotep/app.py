@@ -311,7 +311,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     arg_parser.add_argument(
         "--base_branch_name",
         required=False,
-        default="main",
+        default="master",
         help="Name of the main/master branch to fetch remotes on. Won't be used as a comparison target.",
     )
     arg_parser.add_argument(
